@@ -31,12 +31,15 @@ class SocrataBase:
         options specified in standard ConfigParser format
         """
 
+        print "SocrataBase init"
+
         self.config = configuration
         self.username, password, host = (self.config.get('credentials', 'user'),
             self.config.get('credentials', 'password'),
             self.config.get('server', 'host'))
 
         self.app_token  = self.config.get('credentials', 'app_token')
+
         self.api        = Http()
         self.url        = host
         self.id_pattern = re.compile('^[0-9a-z]{4}-[0-9a-z]{4}$')
@@ -47,6 +50,9 @@ class SocrataBase:
 
     def _request(self, service, type, data = {}):
         """Generic HTTP request, encoding data as JSON and decoding the response"""
+
+        print service, data
+
         response, content = self.api.request(
             self.url + service, type,
             headers = { 'Content-type:': 'application/json',
@@ -131,10 +137,23 @@ class Dataset(SocrataBase):
         return response == None
 
     # Call the search service with optional params
-    def find_datasets(self, params={}):
+    def find_datasets(self, params={}, page=1, results=[]):
         self.error = False
+        print "page is {0}".format(page)
+        params['page'] = page
         sets = self._request("/api/search/views.json?%s" % urlencode(params), "GET")
-        return sets
+        if 'results' in sets and len(sets['results']) > 0:
+            results += sets['results']
+            print 'sets count is {0}'.format(len(sets['results']))
+            print 'results count is {0}'.format(len(results))
+            page = page + 1
+            self.find_datasets(params, page, results)
+        return results
+
+    def find_view_detail(self, table_id):
+        self.error = False
+        view_detail = self._request('/api/views/%s/rows.json' % table_id, "GET")
+        return view_detail 
 
     def metadata(self):
         self.error = False
