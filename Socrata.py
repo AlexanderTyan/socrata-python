@@ -139,16 +139,7 @@ class Dataset(SocrataBase):
     # Call the search service with optional params
     def find_datasets(self, params={}, page=1, results=[]):
         self.error = False
-        print "page is {0}".format(page)
-        params['page'] = page
-        sets = self._request("/api/search/views.json?%s" % urlencode(params), "GET")
-        if 'results' in sets and len(sets['results']) > 0:
-            results += sets['results']
-            print 'sets count is {0}'.format(len(sets['results']))
-            print 'results count is {0}'.format(len(results))
-            page = page + 1
-            self.find_datasets(params, page, results)
-        return results
+        return self._request("/api/views.json?%s" % urlencode(params), "GET")
 
     def find_view_detail(self, table_id):
         self.error = False
