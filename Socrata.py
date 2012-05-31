@@ -21,6 +21,8 @@ from poster.streaminghttp import register_openers
 from httplib2 import Http
 from urllib import urlencode
 from urllib2 import Request, urlopen
+import base64
+
 
 class SocrataBase:
     """Base class for all Socrata API objects"""
@@ -34,7 +36,7 @@ class SocrataBase:
         print "SocrataBase init"
 
         self.config = configuration
-        self.username, password, host = (self.config.get('credentials', 'user'),
+        self.username, self.password, host = (self.config.get('credentials', 'user'),
             self.config.get('credentials', 'password'),
             self.config.get('server', 'host'))
 
@@ -43,20 +45,25 @@ class SocrataBase:
         self.api        = Http()
         self.url        = host
         self.id_pattern = re.compile('^[0-9a-z]{4}-[0-9a-z]{4}$')
-        self.api.add_credentials(self.username, password)
+        # self.api.add_credentials(self.username, password) # This is BROKEN
 
         # For multipart upload/streaming
         register_openers()
 
     def _request(self, service, type, data = {}):
         """Generic HTTP request, encoding data as JSON and decoding the response"""
-
         print service, data
+        
+        # Manually add our basic authentication
+        authBase64 = base64.encodestring('%s:%s' % (self.username, self.password)).replace('\n', '')
 
         response, content = self.api.request(
             self.url + service, type,
-            headers = { 'Content-type:': 'application/json',
-              'X-App-Token': self.app_token },
+            headers = { 
+              'Content-type:': 'application/json',
+              'X-App-Token': self.app_token,
+              'Authorization': "Basic %s" % authBase64
+            },
             body = json.dumps(data) )
         if content != None and len(content) > 0:
             response_parsed = json.loads(content)
