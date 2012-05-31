@@ -37,8 +37,8 @@ class SocrataBase:
 
         self.config = configuration
         self.username, self.password, host = (self.config.get('credentials', 'user'),
-            self.config.get('credentials', 'password'),
-            self.config.get('server', 'host'))
+        self.config.get('credentials', 'password'),
+        self.config.get('server', 'host'))
 
         self.app_token  = self.config.get('credentials', 'app_token')
 
@@ -57,13 +57,17 @@ class SocrataBase:
         # Manually add our basic authentication
         authBase64 = base64.encodestring('%s:%s' % (self.username, self.password)).replace('\n', '')
 
+        headers = { 
+          'Content-type:': 'application/json'
+        }
+        if self.app_token:
+            headers['X-App-Token'] = self.app_token
+        if self.username and self.password:
+            headers['Authorization'] = "Basic %s" % authBase64 
+
         response, content = self.api.request(
             self.url + service, type,
-            headers = { 
-              'Content-type:': 'application/json',
-              'X-App-Token': self.app_token,
-              'Authorization': "Basic %s" % authBase64
-            },
+            headers =  headers,
             body = json.dumps(data) )
         if content != None and len(content) > 0:
             response_parsed = json.loads(content)
